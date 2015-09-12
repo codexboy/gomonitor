@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>服务器监控信息</title>
+    <script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+    <script src="http://libs.baidu.com/jquery/1.9.1/jquery.min.js"></script>
+</head>
+<body>
+<table>
+    <tr>
+        <td>
+            <div id="mem" style="height: 350px;width:600px"></div>
+        </td>
+        <td>
+            <div id="cpu" style="height: 350px;width:600px"></div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div id="appmem" style="height: 350px;width:600px"></div>
+        </td>
+        <td>
+            <div id="appgc" style="height: 350px;width:600px"></div>
+        </td>
+    </tr>
+</table>
+
+
+<script type="text/javascript">
+    // 路径配置
+    require.config({
+        paths: {
+            echarts: 'http://echarts.baidu.com/build/dist'
+        }
+    });
+    var xbind = new Array()
+    var ser1 = new Array();
+    var ser2 = new Array()
+    for (var i = 0; i < 100; i++) {
+        xbind.push(0);
+        ser1.push(0);
+        ser2.push(0);
+    }
+    require(
+            [
+                'echarts',
+                'echarts/chart/line' // 使用柱状图就加载bar模块，按需加载
+            ],
+            function (ec) {
+                // 基于准备好的dom，初始化echarts图表
+                var mem = ec.init(document.getElementById('mem'), 'macarons');
+                var cpu = ec.init(document.getElementById('cpu'), 'macarons');
+
+                var appmem = ec.init(document.getElementById('appmem'), 'macarons');
+                var appgc = ec.init(document.getElementById('appgc'), 'macarons');
+
+
+                $.ajax({
+                    type: "post",
+                    url: "/json/mem",
+                    dataType: "json",
+                    success: function (data) {
+                        memop = {
+                            title: {
+                                text: '服务器内存情况',
+                                subtext: '内存总大小:' + data.total + "M"
+                            },
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            legend: {
+                                data: ['Free', 'Used']
+                            },
+                            toolbox: {
+                                show: true,
+                                feature: {
+                                    mark: {show: false},
+                                    dataView: {show: false, readOnly: false},
+                                    magicType: {show: false, type: ['line', 'bar']},
+                                    restore: {show: true},
+                                    saveAsImage: {show: true}
+                                }
+                            },
+                            calculable: true,
+                            xAxis: [
+                                {
+                                    type: 'category',
+                                    boundaryGap: false,
+                                    data: xbind
+                                }
+                            ],
+                            yAxis: [
+                                {
+                                    type: 'value',
+                                    axisLabel: {
+                                        formatter: '{value} M'
+                                    }
+                                }
+                            ],
+                            series: [
+                                {
+                                    name: 'Free',
+                                    type: 'line',
+                                    itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                                    data: ser1,
+                                    symbol: 'none',
+                                },
+                                {
+                                    name: 'Used',
+                                    type: 'line',
+                                    data: ser2,
+                                    itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                                    symbol: 'none',
+                                }
+                            ]
+                        };
+                        mem.setOption(memop);
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                    }
+                });
+
+                $.ajax({
+                    type: "post",
+                    url: "/json/cpu",
+                    dataType: "json",
+                    success: function (data) {
+                        cpuop = {
+                            title: {
+                                text: '服务器CPU情况',
+                                subtext: data.msg,
+                            },
+                            tooltip: {
+                                trigger: 'axis'
+                            },
+                            legend: {
+                                data: ['Usr', 'Sys', 'Idle']
+                            },
+                            toolbox: {
+                                show: true,
+                                feature: {
+                                    mark: {show: false},
+                                    dataView: {show: false, readOnly: false},
+                                    magicType: {show: false, type: ['line', 'bar']},
+                                    restore: {show: true},
+                                    saveAsImage: {show: true}
+                                }
+                            },
+                            calculable: true,
+                            xAxis: [
+                                {
+                                    type: 'category',
+                                    boundaryGap: false,
+                                    data: xbind
+                                }
+                            ],
+                            yAxis: [
+                                {
+                                    type: 'value',
+                                    axisLabel: {
+                                        formatter: '{value} %'
+                                    }
+                                }
+                            ],
+                            series: [
+                                {
+                                    name: 'Usr',
+                                    type: 'line',
+                                    itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                                    data: ser1,
+                                    symbol: 'none',
+                                },
+                                {
+                                    name: 'Sys',
+                                    type: 'line',
+                                    data: ser2,
+                                    itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                                    symbol: 'none',
+                                },
+                                {
+                                    name: 'Idle',
+                                    type: 'line',
+                                    data: ser2,
+                                    itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                                    symbol: 'none',
+                                }
+                            ]
+                        };
+                        // 为echarts对象加载数据
+                        cpu.setOption(cpuop);
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                    }
+                });
+                //for app
+                appmemop = {
+                    title: {
+                        text: 'MemStats',
+                        //subtext: data.msg,
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['Alloc', 'Sys', 'HeapAlloc', 'HeapInuse']
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: false},
+                            dataView: {show: false, readOnly: false},
+                            magicType: {show: false, type: ['line', 'bar']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: xbind
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            axisLabel: {
+                                formatter: '{value} K'
+                            }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'Alloc',
+                            type: 'line',
+                            itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                            data: ser1,
+                            symbol: 'none',
+                        },
+                        {
+                            name: 'Sys',
+                            type: 'line',
+                            data: ser2,
+                            itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                            symbol: 'none',
+                        },
+                        {
+                            name: 'HeapAlloc',
+                            type: 'line',
+                            data: ser2,
+                            itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                            symbol: 'none',
+                        },
+                        {
+                            name: 'HeapInuse',
+                            type: 'line',
+                            data: ser2,
+                            itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                            symbol: 'none',
+                        }
+                    ]
+                };
+                // 为echarts对象加载数据
+                appmem.setOption(appmemop);
+
+                appgcop = {
+                    title: {
+                        text: 'GcStats',
+                        //subtext: data.msg,
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['Objects']
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: false},
+                            dataView: {show: false, readOnly: false},
+                            magicType: {show: false, type: ['line', 'bar']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: xbind
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            axisLabel: {
+                                formatter: '{value} '
+                            }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'Objects',
+                            type: 'line',
+                            itemStyle: {normal: {areaStyle: {type: 'default'}}},
+                            data: ser1,
+                            symbol: 'none',
+                        }
+                    ]
+                };
+                // 为echarts对象加载数据
+                appgc.setOption(appgcop);
+
+                //定时器
+                timeTicket = setInterval(function () {
+                    $.ajax({
+                        type: "post",
+                        url: "/json/mem",
+                        dataType: "json",
+                        success: function (data) {
+                            mem.addData([
+                                [
+                                    0,        // 系列索引
+                                    //Math.round(Math.random() * 1000), // 新增数据
+                                    data.free,
+                                    false,     // 新增数据是否从队列头部插入
+                                    false     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                ],
+                                [
+                                    1,        // 系列索引
+                                    //Math.round(Math.random() * 1000), // 新增数据
+                                    data.used,
+                                    false,    // 新增数据是否从队列头部插入
+                                    false,    // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                    (new Date()).toLocaleTimeString().replace(/^\D*/, '') // 坐标轴标签
+                                ]
+                            ]);
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            console.log(errorThrown);
+                        }
+                    });
+                    $.ajax({
+                        type: "post",
+                        url: "/json/cpu",
+                        dataType: "json",
+                        success: function (data) {
+                            cpu.addData([
+                                [
+                                    0,        // 系列索引
+                                    data.usr,
+                                    false,     // 新增数据是否从队列头部插入
+                                    false     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                ],
+                                [
+                                    1,        // 系列索引
+                                    data.sys,
+                                    false,     // 新增数据是否从队列头部插入
+                                    false     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                ],
+                                [
+                                    2,        // 系列索引
+                                    data.idle,
+                                    false,    // 新增数据是否从队列头部插入
+                                    false,    // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                    (new Date()).toLocaleTimeString().replace(/^\D*/, '') // 坐标轴标签
+                                ]
+                            ]);
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            console.log(errorThrown);
+                        }
+                    });
+                    $.ajax({
+                        type: "post",
+                        url: "/vars/",
+                        dataType: "json",
+                        success: function (data) {
+                            appmem.addData([
+                                [
+                                    0,        // 系列索引
+                                    (data.alloc/1024).toFixed(2),
+                                    false,     // 新增数据是否从队列头部插入
+                                    false,     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                    (new Date()).toLocaleTimeString().replace(/^\D*/, '') // 坐标轴标签
+                                ],
+                                [
+                                    1,        // 系列索引
+                                    (data.sys/1024).toFixed(2),
+                                    false,     // 新增数据是否从队列头部插入
+                                    false     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                ],
+                                [
+                                    2,        // 系列索引
+                                    (data.heapAlloc/1024).toFixed(2),
+                                    false,    // 新增数据是否从队列头部插入
+                                    false,    // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                    // (new Date()).toLocaleTimeString().replace(/^\D*/, '') // 坐标轴标签
+                                ], [
+                                    3,        // 系列索引
+                                    (data.heapInuse/1024).toFixed(2),
+                                    false,    // 新增数据是否从队列头部插入
+                                    false,    // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                    // (new Date()).toLocaleTimeString().replace(/^\D*/, '') // 坐标轴标签
+                                ]
+                            ]);
+                            appgc.addData([
+                                [
+                                    0,        // 系列索引
+                                    data.objects,
+                                    false,     // 新增数据是否从队列头部插入
+                                    false,     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+                                    (new Date()).toLocaleTimeString().replace(/^\D*/, '') // 坐标轴标签
+                                ]
+                            ]);
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            console.log(errorThrown);
+                        }
+                    });
+
+
+//
+//                    myChart.addData([
+//                        [
+//                            0,        // 系列索引
+//                            Math.round(Math.random() * 1000), // 新增数据
+//                            false,     // 新增数据是否从队列头部插入
+//                            false     // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+//                        ],
+//                        [
+//                            1,        // 系列索引
+//                            Math.round(Math.random() * 1000), // 新增数据
+//                            false,    // 新增数据是否从队列头部插入
+//                            false,    // 是否增加队列长度，false则自定删除原有数据，队头插入删队尾，队尾插入删队头
+//                            (new Date()).toLocaleTimeString().replace(/^\D*/,'') // 坐标轴标签
+//                        ]
+//                    ]);
+                }, 5000);
+            }
+    );
+
+</script>
+</body>
+</html>
