@@ -76,6 +76,7 @@ func VarsCmd(w http.ResponseWriter, q *http.Request) {
 }
 
 func main() {
+
 	http.HandleFunc("/json/", jsonCmd)
 	http.HandleFunc("/html/", htmlParse)
 	http.HandleFunc("/vars/", VarsCmd)
